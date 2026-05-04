@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🍾 Party Duel — Arena!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;700;800&family=Spline+Sans+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body class="game-page">
+
+  <!-- HUD — Player 1 -->
+  <div class="hud hud-left" id="hud-p1">
+    <div class="hud-name" id="hud-p1-name">Gracz 1</div>
+    <div class="hp-bar-container hp-magenta">
+      <div class="hp-segments" id="hp-p1-segments"></div>
+      <div class="hp-fill" id="hp-p1-fill"></div>
+    </div>
+    <div class="hp-value" id="hp-p1-value">100</div>
+    <div class="weapon-hud" id="weapon-p1-hud">
+      <span class="weapon-icon-hud" id="weapon-p1-icon">🍶</span>
+      <span class="weapon-name-hud" id="weapon-p1-name">SOPLICA</span>
+      <span class="weapon-dmg-hud" id="weapon-p1-dmg">-15</span>
+    </div>
+  </div>
+
+  <!-- Center HUD — Timer / VS -->
+  <div class="hud-center" id="hud-center">
+    <div class="vs-text">VS</div>
+    <div class="round-timer" id="round-timer">3:00</div>
+  </div>
+
+  <!-- HUD — Player 2 -->
+  <div class="hud hud-right" id="hud-p2">
+    <div class="hud-name" id="hud-p2-name">Gracz 2</div>
+    <div class="hp-bar-container hp-cyan">
+      <div class="hp-segments" id="hp-p2-segments"></div>
+      <div class="hp-fill" id="hp-p2-fill"></div>
+    </div>
+    <div class="hp-value" id="hp-p2-value">100</div>
+    <div class="weapon-hud" id="weapon-p2-hud">
+      <span class="weapon-icon-hud" id="weapon-p2-icon">🍶</span>
+      <span class="weapon-name-hud" id="weapon-p2-name">SOPLICA</span>
+      <span class="weapon-dmg-hud" id="weapon-p2-dmg">-15</span>
+    </div>
+  </div>
+
+  <!-- Game Canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Overlay screens -->
+  <div class="game-overlay hidden" id="overlay-countdown">
+    <div class="countdown-number" id="countdown-number">3</div>
+  </div>
+
+  <div class="game-overlay hidden" id="overlay-gameover">
+    <div class="gameover-panel">
+      <div class="gameover-title" id="gameover-title">WYGRYWA!</div>
+      <div class="gameover-winner" id="gameover-winner">Gracz 1</div>
+      <div class="gameover-emoji">🎉🍾🎊</div>
+      <div class="gameover-actions">
+        <button class="btn btn-primary btn-large" id="btn-rematch">
+          <span class="btn-icon">🔄</span> REWANŻ
+        </button>
+        <button class="btn btn-ghost btn-large" id="btn-back-lobby">
+          <span class="btn-icon">🏠</span> LOBBY
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Damage flash overlay -->
+  <div class="damage-flash hidden" id="damage-flash"></div>
+
+  <script src="network.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
