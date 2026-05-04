@@ -24,6 +24,8 @@ const MAX_HP = 100;
 let canvas, ctx;
 let animId;
 let gameRunning = false;
+let gameEnded   = false; // guard against double-endGame
+let frameCount  = 0;   // proper frame counter for sendState throttle
 let countdown   = 3;
 let countdownTimer;
 let roundTime   = 180; // seconds
@@ -189,7 +191,18 @@ function handleRemoteState(data) {
   them.weaponIdx = data.weaponIdx;
   them.throwing  = data.throwing;
   if (data.ammo)  them.ammo = data.ammo;
-  if (data.name)  { them.name = data.name; updateHUD(); }
+  if (data.name)  them.name = data.name;
+
+  // ── CRITICAL FIX: sync HP from remote so health bar updates ──
+  if (typeof data.hp === 'number' && data.hp !== them.hp) {
+    them.hp = data.hp;
+    updateHUD();
+    if (them.hp <= 0) {
+      endGame(myPlayerNum - 1); // remote player died → local player wins
+    }
+  } else {
+    updateHUD();
+  }
 
   updateWeaponHUD(remIdx);
 }
@@ -298,8 +311,9 @@ function update() {
     if (p.life <= 0) particles.splice(i, 1);
   }
 
-  // Send state every ~3 frames
-  if (animId % 3 === 0) sendState();
+  // Send state every 3 frames (frameCount is a real counter, animId is NOT)
+  frameCount++;
+  if (frameCount % 3 === 0) sendState();
 }
 
 function isLocalPlayer(p) { return p.isLocal; }
@@ -343,6 +357,8 @@ function applyDamage(player, dmg, color) {
 }
 
 function endGame(winnerIdx) {
+  if (gameEnded) return;  // prevent double-trigger
+  gameEnded   = true;
   gameRunning = false;
   clearInterval(roundInterval);
   cancelAnimationFrame(animId);
@@ -372,6 +388,8 @@ function restartGame() {
     p.y = GROUND_Y - P_H;
     p.vx = 0; p.vy = 0;
   });
+  gameEnded   = false;
+  frameCount  = 0;
   bottles.length = 0; particles.length = 0;
   updateHUD();
   startCountdown();
