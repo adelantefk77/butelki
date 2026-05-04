@@ -96,21 +96,15 @@ function setupControls() {
 
 function handleKeyDown(e) {
   if (!gameRunning) return;
-  const me = players[myPlayerNum - 1];
+  const me   = players[myPlayerNum - 1];
   const pIdx = myPlayerNum - 1;
 
-  // Weapon switch — P1: Q/E, P2: [/]
-  if (myPlayerNum === 1) {
-    if (e.code === 'KeyQ') switchWeapon(me, -1);
-    if (e.code === 'KeyE') switchWeapon(me,  1);
-    if (e.code === 'KeyF') tryThrow(me, pIdx);
-  } else {
-    if (e.code === 'BracketLeft')  switchWeapon(me, -1);
-    if (e.code === 'BracketRight') switchWeapon(me,  1);
-    if (e.code === 'KeyL') tryThrow(me, pIdx);
-  }
+  // Wszyscy gracze używają tych samych klawiszy (grają na osobnych maszynach)
+  if (e.code === 'KeyQ') switchWeapon(me, -1);
+  if (e.code === 'KeyE') switchWeapon(me,  1);
+  if (e.code === 'KeyF') tryThrow(me, pIdx);
 
-  // Prevent arrow keys from scrolling the page
+  // Prevent scroll
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) {
     e.preventDefault();
   }
@@ -253,19 +247,11 @@ function loop() {
 function update() {
   const me = players[myPlayerNum - 1];
 
-  // Input dla lokalnego gracza
-  // P1: WASD lub strzałki | P2: strzałki lub WASD
-  if (myPlayerNum === 1) {
-    if      (keys['KeyA'] || keys['ArrowLeft'])  { me.vx = -SPEED; me.facing = -1; }
-    else if (keys['KeyD'] || keys['ArrowRight']) { me.vx =  SPEED; me.facing =  1; }
-    else me.vx = 0;
-    if ((keys['KeyW'] || keys['ArrowUp'] || keys['Space']) && me.onGround) { me.vy = JUMP_F; me.onGround = false; }
-  } else {
-    if      (keys['ArrowLeft']  || keys['KeyA']) { me.vx = -SPEED; me.facing = -1; }
-    else if (keys['ArrowRight'] || keys['KeyD']) { me.vx =  SPEED; me.facing =  1; }
-    else me.vx = 0;
-    if ((keys['ArrowUp'] || keys['KeyW'] || keys['Space']) && me.onGround) { me.vy = JUMP_F; me.onGround = false; }
-  }
+  // Input dla lokalnego gracza — te same klawisze dla wszystkich
+  if      (keys['KeyA'] || keys['ArrowLeft'])  { me.vx = -SPEED; me.facing = -1; }
+  else if (keys['KeyD'] || keys['ArrowRight']) { me.vx =  SPEED; me.facing =  1; }
+  else me.vx = 0;
+  if ((keys['KeyW'] || keys['ArrowUp'] || keys['Space']) && me.onGround) { me.vy = JUMP_F; me.onGround = false; }
 
   // Physics for local player
   applyPhysics(me);
