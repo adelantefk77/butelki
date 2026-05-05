@@ -79,6 +79,8 @@ window.initGame = function (playerName, playerNum, isBotMode = false) {
     p.x = i === 0 ? 160 : CANVAS_W - 200;
     p.y = GROUND_Y - P_H;
     p.vx = p.vy = 0;
+    p.targetX = p.x;
+    p.targetY = p.y;
     p.isLocal = (i === playerNum - 1);
   });
   players[playerNum - 1].name = playerName;
@@ -177,8 +179,7 @@ function tryThrow(player, pIdx) {
   player.throwing = true;
   setTimeout(() => { player.throwing = false; }, 300);
 
-  // Wyślij event rzutu (zamiast synca pozycji butelek)
-  Network.send({ t: 'throw', bx, by, vx: dir * w.speed, vy: -5, wId: w.id, owner: pIdx });
+  Network.send({ t: 'throw', bx, by, vx: dir * w.speed, vy: -5, wId: w.id, owner: pIdx, ts: Date.now() });
   sendState();
 }
 
@@ -210,7 +211,16 @@ function sendState() {
 function handleRemoteState(data) {
   if (data.t === 'throw') {
     const remoteOwner = 2 - myPlayerNum;
-    spawnBottle(data.bx, data.by, data.vx, data.vy, WEAPONS[data.wId], remoteOwner);
+    const b = { x: data.bx, y: data.by, vx: data.vx, vy: data.vy, weapon: WEAPONS[data.wId], owner: remoteOwner, age: 0 };
+    // Lag compensation: fast-forward bottle physics by estimated network delay
+    if (data.ts) {
+      const lagFrames = Math.min(Math.round((Date.now() - data.ts) / (1000 / 60)), 45);
+      for (let f = 0; f < lagFrames; f++) {
+        b.x += b.vx; b.y += b.vy; b.vy += GRAVITY * 0.5; b.age++;
+        if (b.y > GROUND_Y - 10 || b.x < -50 || b.x > CANVAS_W + 50) break;
+      }
+    }
+    bottles.push(b);
     return;
   }
   // Dedicated HP event — sent immediately on hit for fast sync
@@ -218,6 +228,8 @@ function handleRemoteState(data) {
     const remIdx = 2 - myPlayerNum;
     players[remIdx].hp = data.hp;
     updateHUD();
+    // Show hit effects on observer's screen too
+    spawnHitExplosion(players[remIdx]);
     if (data.hp <= 0) endGame(myPlayerNum - 1); // remote player died
     return;
   }
@@ -225,7 +237,7 @@ function handleRemoteState(data) {
 
   const remIdx = 2 - myPlayerNum;
   const them   = players[remIdx];
-  them.x = data.x; them.y = data.y;
+  them.targetX = data.x; them.targetY = data.y;
   them.vx = data.vx; them.vy = data.vy;
   them.facing    = data.facing;
   them.weaponIdx = data.weaponIdx;
@@ -332,6 +344,16 @@ function update() {
     }
   }
 
+  // Smooth remote player position with lerp (fixes stutter between packets)
+  if (!botMode) {
+    const remIdx = myPlayerNum === 1 ? 1 : 0;
+    const rem = players[remIdx];
+    if (rem.targetX !== undefined) {
+      rem.x += (rem.targetX - rem.x) * 0.35;
+      rem.y += (rem.targetY - rem.y) * 0.35;
+    }
+  }
+
   // Bot AI
   if (botMode) updateBot();
 
@@ -347,9 +369,9 @@ function update() {
   // Hit timers
   players.forEach(p => { if (p.hitTimer > 0) p.hitTimer--; });
 
-  // Send state every 3 frames (frameCount is a real counter, animId is NOT)
+  // Send state every 2 frames (~30/s at 60fps) for smoother sync
   frameCount++;
-  if (!botMode && frameCount % 3 === 0) sendState();
+  if (!botMode && frameCount % 2 === 0) sendState();
 }
 
 // ─── BOT AI ───────────────────────────────────────────────────
@@ -473,6 +495,7 @@ function restartGame() {
     p.x = i === 0 ? 160 : CANVAS_W - 200;
     p.y = GROUND_Y - P_H;
     p.vx = 0; p.vy = 0;
+    p.targetX = p.x; p.targetY = p.y;
   });
   gameEnded        = false;
   frameCount       = 0;
