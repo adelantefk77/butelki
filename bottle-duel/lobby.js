@@ -57,11 +57,11 @@
   }
 
   // Switch to game view — WebSocket stays alive, no page navigation
-  function switchToGame(playerName, playerNum) {
+  function switchToGame(playerName, playerNum, isBotMode = false) {
     document.getElementById('lobby-section').style.display = 'none';
     document.getElementById('game-section').style.display  = 'block';
     document.body.className = 'game-page';
-    window.initGame(playerName, playerNum);
+    window.initGame(playerName, playerNum, isBotMode);
   }
 
   // ─── STWÓRZ POKÓJ ─────────────────────────────────────────────
@@ -117,6 +117,13 @@
       showStatus('❌ ' + (err.message || 'Błąd połączenia'), 'error');
       setButtonsDisabled(false);
     }
+  });
+
+  // ─── GRA Z BOTEM ──────────────────────────────────────────────
+  document.getElementById('btn-play-bot').addEventListener('click', () => {
+    const name = validateName();
+    if (!name) return;
+    switchToGame(name, 1, true);
   });
 
   elCodeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') elBtnJoin.click(); });

@@ -49,15 +49,19 @@ const bottles = []; // { x, y, vx, vy, weapon, owner, age }
 const particles = []; // { x, y, vx, vy, color, life, maxLife, r }
 
 // Session data
-let myPlayerNum = 1; // 1 or 2
-let isHost      = false;
+let myPlayerNum     = 1; // 1 or 2
+let isHost          = false;
+let botMode         = false;
+let botDecisionTimer = 0;
 
 // ─── INIT ─────────────────────────────────────────────────────
 let _controlsAttached = false;
 
 // Called by lobby.js after WebSocket room is established (no page navigation)
-window.initGame = function (playerName, playerNum) {
-  myPlayerNum = playerNum;
+window.initGame = function (playerName, playerNum, isBotMode = false) {
+  myPlayerNum      = playerNum;
+  botMode          = isBotMode;
+  botDecisionTimer = 0;
   gameRunning = false;
   gameEnded   = false;
   frameCount  = 0;
@@ -78,6 +82,7 @@ window.initGame = function (playerName, playerNum) {
     p.isLocal = (i === playerNum - 1);
   });
   players[playerNum - 1].name = playerName;
+  if (botMode) players[1].name = '🤖 BOT';
 
   // One-time DOM/event setup (survives across rematches and back-to-lobby)
   if (!_controlsAttached) {
@@ -91,7 +96,7 @@ window.initGame = function (playerName, playerNum) {
   }
 
   resizeCanvas();
-  setupNetwork();
+  if (!botMode) setupNetwork();
   updateHUD();
   drawBackground();
   document.getElementById('overlay-gameover').classList.add('hidden');
@@ -308,8 +313,7 @@ function update() {
     // Max age (zasięg zależny od broni)
     if (b.age > b.weapon.maxAge) { spawnBottleParticles(b); bottles.splice(i, 1); continue; }
 
-    // Detekcja trafienia: każdy sprawdza, czy butelka PRZECIWNIKA trafia w NIEGO
-    // owner to 0-based index, myPlayerNum-1 to 0-based local
+    // Hit detection: each client checks if enemy bottles hit their own player
     const isEnemyBottle = (b.owner !== myPlayerNum - 1);
     const mySelf        = players[myPlayerNum - 1];
     if (isEnemyBottle && hitTest(b, mySelf)) {
@@ -318,7 +322,18 @@ function update() {
       bottles.splice(i, 1);
       continue;
     }
+
+    // In bot mode: also check if player's bottles hit the bot (player 2)
+    if (botMode && b.owner === 0 && hitTest(b, players[1])) {
+      applyDamage(players[1], b.weapon.dmg, b.weapon.color);
+      spawnBottleParticles(b);
+      bottles.splice(i, 1);
+      continue;
+    }
   }
+
+  // Bot AI
+  if (botMode) updateBot();
 
   // Particles
   for (let i = particles.length - 1; i >= 0; i--) {
@@ -334,7 +349,60 @@ function update() {
 
   // Send state every 3 frames (frameCount is a real counter, animId is NOT)
   frameCount++;
-  if (frameCount % 3 === 0) sendState();
+  if (!botMode && frameCount % 3 === 0) sendState();
+}
+
+// ─── BOT AI ───────────────────────────────────────────────────
+function updateBot() {
+  const bot    = players[1];
+  const target = players[0];
+  if (bot.hp <= 0 || target.hp <= 0) return;
+
+  const dx    = target.x - bot.x;
+  const absDx = Math.abs(dx);
+  const FIGHT_DIST = 200;
+
+  // Face target
+  bot.facing = dx >= 0 ? 1 : -1;
+
+  // Movement: close in or back off to maintain fight distance
+  if (absDx > FIGHT_DIST + 40) {
+    bot.vx = (dx > 0 ? 1 : -1) * SPEED * 0.88;
+  } else if (absDx < FIGHT_DIST - 40) {
+    bot.vx = (dx > 0 ? -1 : 1) * SPEED * 0.7;
+  } else {
+    bot.vx = 0;
+  }
+
+  // Random jump: dodge or chase
+  if (bot.onGround && Math.random() < 0.009) {
+    bot.vy = JUMP_F;
+    bot.onGround = false;
+  }
+
+  // Weapon selection: prefer highest-dmg weapon that still has ammo
+  for (let i = WEAPONS.length - 1; i >= 0; i--) {
+    if (bot.ammo[i] > 0) { bot.weaponIdx = i; break; }
+  }
+
+  // Throw when in range and both timers allow it
+  botDecisionTimer--;
+  if (bot.cooldown <= 0 && botDecisionTimer <= 0 && absDx < 520 && bot.ammo[bot.weaponIdx] > 0) {
+    const w   = WEAPONS[bot.weaponIdx];
+    const dir = bot.facing;
+    // Slight vertical arc — aim higher when target is far away
+    const aimVy = absDx > 320 ? -7 : -4;
+    bot.ammo[bot.weaponIdx]--;  // Infinity - 1 === Infinity, so Soplica is safe
+    spawnBottle(bot.x + (dir > 0 ? P_W : 0), bot.y + P_H * 0.3, dir * w.speed, aimVy, w, 1);
+    bot.cooldown      = 38 + Math.floor(Math.random() * 28);
+    bot.throwing      = true;
+    botDecisionTimer  = 18 + Math.floor(Math.random() * 35);
+    setTimeout(() => { bot.throwing = false; }, 300);
+  }
+
+  // Physics
+  applyPhysics(bot);
+  if (bot.cooldown > 0) bot.cooldown--;
 }
 
 function isLocalPlayer(p) { return p.isLocal; }
@@ -406,8 +474,9 @@ function restartGame() {
     p.y = GROUND_Y - P_H;
     p.vx = 0; p.vy = 0;
   });
-  gameEnded   = false;
-  frameCount  = 0;
+  gameEnded        = false;
+  frameCount       = 0;
+  botDecisionTimer = 0;
   bottles.length = 0; particles.length = 0;
   updateHUD();
   startCountdown();

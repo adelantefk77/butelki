@@ -427,6 +427,18 @@ kbd {
   box-shadow: 0 2px 0 #007a8a;
 }
 
+.action-btn-lime {
+  background: linear-gradient(135deg, #b3f000, #7aaa00);
+  color: #0d1a00;
+  box-shadow: 0 5px 0 #3d6000, 0 8px 24px #b3f00044;
+}
+.action-btn-lime:hover {
+  box-shadow: 0 5px 0 #3d6000, 0 8px 40px #b3f00066;
+}
+.action-btn-lime:active {
+  box-shadow: 0 2px 0 #3d6000;
+}
+
 /* Join row */
 .or-divider {
   text-align: center;
