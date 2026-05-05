@@ -1,5 +1,5 @@
 /**
- * game.js — Party Duel Game Engine
+ * game.js — Jankowo Duel Game Engine
  * Canvas 2D, physics, networking, weapons
  */
 

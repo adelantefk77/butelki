@@ -1,5 +1,5 @@
 {
-  "name": "party-duel",
+  "name": "jankowo-duel",
   "version": "1.0.0",
   "description": "Multiplayer bottle-throwing party game",
   "main": "server.js",

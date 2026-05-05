@@ -70,4 +70,4 @@ wss.on('connection', (ws) => {
   });
 });
 
-server.listen(PORT, () => console.log(`Party Duel on port ${PORT}`));
+server.listen(PORT, () => console.log(`Jankowo Duel on port ${PORT}`));
