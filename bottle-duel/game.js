@@ -12,7 +12,7 @@ const SPEED    = 4.5;
 
 const WEAPONS = [
   // ammo: ile rzutów w rundzie; maxAge: jak daleko doleci (w klatkach)
-  { id: 0, name: 'SOPLICA',           icon: '🍶', dmg: 15, color: '#00eefc', speed: 9,   size: 14, ammo: 10, maxAge: 200 },
+  { id: 0, name: 'SOPLICA',           icon: '🍶', dmg:  5, color: '#00eefc', speed: 9,   size: 14, ammo: Infinity, maxAge: 200 },
   { id: 1, name: 'SEX ON THE MORENA', icon: '🥂', dmg: 25, color: '#ffabf3', speed: 7,   size: 18, ammo:  5, maxAge: 130 },
   { id: 2, name: 'JANKOWO LIBRE',     icon: '🍾', dmg: 35, color: '#abd600', speed: 5.5, size: 22, ammo:  2, maxAge:  80 },
 ];
@@ -37,10 +37,10 @@ const keys = {};
 function makeAmmo() { return WEAPONS.map(w => w.ammo); }
 const players = [
   { x: 160, y: GROUND_Y - P_H, vx: 0, vy: 0, hp: MAX_HP, onGround: false,
-    facing: 1, weaponIdx: 0, cooldown: 0, throwing: false, ammo: null,
+    facing: 1, weaponIdx: 0, cooldown: 0, throwing: false, ammo: null, hitTimer: 0,
     name: 'Gracz 1', color: '#ffabf3', darkColor: '#c067a0', isLocal: true },
   { x: CANVAS_W - 200, y: GROUND_Y - P_H, vx: 0, vy: 0, hp: MAX_HP, onGround: false,
-    facing: -1, weaponIdx: 0, cooldown: 0, throwing: false, ammo: null,
+    facing: -1, weaponIdx: 0, cooldown: 0, throwing: false, ammo: null, hitTimer: 0,
     name: 'Gracz 2', color: '#00eefc', darkColor: '#007a8a', isLocal: false },
 ];
 players.forEach(p => { p.ammo = makeAmmo(); });
@@ -70,6 +70,7 @@ window.initGame = function (playerName, playerNum) {
     p.weaponIdx = 0;
     p.cooldown  = 0;
     p.throwing  = false;
+    p.hitTimer  = 0;
     p.ammo      = makeAmmo();
     p.x = i === 0 ? 160 : CANVAS_W - 200;
     p.y = GROUND_Y - P_H;
@@ -328,6 +329,9 @@ function update() {
     if (p.life <= 0) particles.splice(i, 1);
   }
 
+  // Hit timers
+  players.forEach(p => { if (p.hitTimer > 0) p.hitTimer--; });
+
   // Send state every 3 frames (frameCount is a real counter, animId is NOT)
   frameCount++;
   if (frameCount % 3 === 0) sendState();
@@ -363,7 +367,7 @@ function applyDamage(player, dmg, color) {
   updateHUD();
   flashDamage(color);
   spawnDmgNumber(player.x + P_W / 2, player.y, dmg, color);
-  // Immediately tell opponent about our new HP (don't wait for next sendState)
+  spawnHitExplosion(player);
   Network.send({ t: 'hp', hp: player.hp });
   if (player.hp <= 0) {
     endGame(players.indexOf(player) === 0 ? 1 : 0);
@@ -396,7 +400,7 @@ function endGame(winnerIdx) {
 function restartGame() {
   document.getElementById('overlay-gameover').classList.add('hidden');
   players.forEach((p, i) => {
-    p.hp = MAX_HP; p.weaponIdx = 0; p.cooldown = 0; p.throwing = false;
+    p.hp = MAX_HP; p.weaponIdx = 0; p.cooldown = 0; p.throwing = false; p.hitTimer = 0;
     p.ammo = makeAmmo();
     p.x = i === 0 ? 160 : CANVAS_W - 200;
     p.y = GROUND_Y - P_H;
@@ -582,6 +586,30 @@ function drawPlayers() {
     ctx.fillText(`P${idx + 1}`, P_W / 2, -8);
     ctx.textAlign = 'left';
 
+    // Hit explosion ring
+    if (p.hitTimer > 0) {
+      const progress = 1 - p.hitTimer / 14; // 0→1 as ring expands
+      const radius   = (P_W * 0.8) + progress * P_H * 1.4;
+      const alpha    = p.hitTimer / 14;
+      ctx.globalAlpha = alpha * 0.85;
+      ctx.strokeStyle = '#ffffff';
+      ctx.shadowColor = col;
+      ctx.shadowBlur  = 18;
+      ctx.lineWidth   = 3 * alpha;
+      ctx.beginPath();
+      ctx.arc(P_W / 2, P_H / 2, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      // Inner tinted ring
+      ctx.globalAlpha = alpha * 0.4;
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 6 * alpha;
+      ctx.beginPath();
+      ctx.arc(P_W / 2, P_H / 2, radius * 0.6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur  = 0;
+    }
+
     ctx.restore();
   });
 }
@@ -623,6 +651,41 @@ function drawBottles() {
 }
 
 // ─── PARTICLES ────────────────────────────────────────────────
+function spawnHitExplosion(player) {
+  const cx = player.x + P_W / 2;
+  const cy = player.y + P_H / 2;
+  const col = player.color;
+  const WHITE = '#ffffff';
+
+  for (let i = 0; i < 28; i++) {
+    const angle = (i / 28) * Math.PI * 2 + Math.random() * 0.3;
+    const spd   = 3 + Math.random() * 7;
+    particles.push({
+      x: cx, y: cy,
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd - 3,
+      color: i % 4 === 0 ? WHITE : col,
+      life: 30 + Math.random() * 25,
+      maxLife: 55,
+      r: 2 + Math.random() * 5,
+    });
+  }
+  // Extra upward sparks
+  for (let i = 0; i < 8; i++) {
+    particles.push({
+      x: cx + (Math.random() - 0.5) * P_W,
+      y: cy,
+      vx: (Math.random() - 0.5) * 4,
+      vy: -(5 + Math.random() * 8),
+      color: i % 2 === 0 ? col : WHITE,
+      life: 25 + Math.random() * 20,
+      maxLife: 45,
+      r: 1.5 + Math.random() * 3,
+    });
+  }
+  player.hitTimer = 14;
+}
+
 function spawnBottleParticles(b) {
   const w = b.weapon;
   for (let i = 0; i < 16; i++) {
@@ -703,9 +766,10 @@ function updateWeaponHUD(pIdx) {
   const w = WEAPONS[p.weaponIdx];
   const n = pIdx + 1;
   const ammoLeft = p.ammo ? p.ammo[p.weaponIdx] : w.ammo;
+  const ammoStr  = ammoLeft === Infinity ? '∞' : ammoLeft;
   document.getElementById(`weapon-p${n}-icon`).textContent = w.icon;
   document.getElementById(`weapon-p${n}-name`).textContent = w.name;
-  document.getElementById(`weapon-p${n}-dmg`).textContent  = `-${w.dmg} ×${ammoLeft}`;
+  document.getElementById(`weapon-p${n}-dmg`).textContent  = `-${w.dmg} ×${ammoStr}`;
 }
 
 function flashDamage(color) {
