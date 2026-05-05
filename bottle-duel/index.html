@@ -4,143 +4,197 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>🍾 Party Duel — Rzucaj Butelkami!</title>
-  <meta name="description" content="Gra online dla dwóch graczy w rzucanie butelkami alkoholu. Wybierz Soplicę, Sex on the Morena lub Jankowo Libre i pokonaj rywala!" />
+  <meta name="description" content="Gra online dla dwóch graczy w rzucanie butelkami alkoholu." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&family=Spline+Sans:wght@400;700;800&family=Spline+Sans+Mono:wght@400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="lobby-page">
 
-  <!-- Animated background -->
-  <div class="lobby-bg">
-    <div class="bg-orb bg-orb-1"></div>
-    <div class="bg-orb bg-orb-2"></div>
-    <div class="bg-orb bg-orb-3"></div>
-    <div class="bg-grid"></div>
-  </div>
-  <div id="bg-particles" class="bg-particles"></div>
+  <!-- ══════════════════════════════════════════
+       LOBBY SECTION
+  ═══════════════════════════════════════════ -->
+  <div id="lobby-section">
 
-  <!-- Floating decorations -->
-  <div class="deco-bottle deco-1">🍾</div>
-  <div class="deco-bottle deco-2">🍶</div>
-  <div class="deco-bottle deco-3">🥂</div>
+    <div class="lobby-bg">
+      <div class="bg-orb bg-orb-1"></div>
+      <div class="bg-orb bg-orb-2"></div>
+      <div class="bg-orb bg-orb-3"></div>
+      <div class="bg-grid"></div>
+    </div>
+    <div id="bg-particles" class="bg-particles"></div>
 
-  <div class="lobby-wrap">
+    <div class="deco-bottle deco-1">🍾</div>
+    <div class="deco-bottle deco-2">🍶</div>
+    <div class="deco-bottle deco-3">🥂</div>
 
-    <!-- LEFT: Hero -->
-    <div class="lobby-hero">
-      <div class="hero-eyebrow">⚔️ Multiplayer Battle</div>
-      <h1 class="hero-title">
-        <span class="ht-line1">PARTY</span>
-        <span class="ht-line2">DUEL</span>
-      </h1>
-      <p class="hero-subtitle">Rzucaj butelkami · Unikaj ciosów · Wygraj imprezę</p>
+    <div class="lobby-wrap">
 
-      <!-- Weapons showcase -->
-      <div class="weapons-row">
-        <div class="wcard wcard-cyan">
-          <span class="wcard-icon">🍶</span>
-          <div class="wcard-body">
-            <span class="wcard-name">SOPLICA</span>
-            <span class="wcard-hp">−15 HP</span>
+      <div class="lobby-hero">
+        <div class="hero-eyebrow">⚔️ Multiplayer Battle</div>
+        <h1 class="hero-title">
+          <span class="ht-line1">PARTY</span>
+          <span class="ht-line2">DUEL</span>
+        </h1>
+        <p class="hero-subtitle">Rzucaj butelkami · Unikaj ciosów · Wygraj imprezę</p>
+
+        <div class="weapons-row">
+          <div class="wcard wcard-cyan">
+            <span class="wcard-icon">🍶</span>
+            <div class="wcard-body">
+              <span class="wcard-name">SOPLICA</span>
+              <span class="wcard-hp">−15 HP</span>
+            </div>
+          </div>
+          <div class="wcard wcard-pink">
+            <span class="wcard-icon">🥂</span>
+            <div class="wcard-body">
+              <span class="wcard-name">SEX ON THE MORENA</span>
+              <span class="wcard-hp">−25 HP</span>
+            </div>
+          </div>
+          <div class="wcard wcard-lime">
+            <span class="wcard-icon">🍾</span>
+            <div class="wcard-body">
+              <span class="wcard-name">JANKOWO LIBRE</span>
+              <span class="wcard-hp">−35 HP</span>
+            </div>
           </div>
         </div>
-        <div class="wcard wcard-pink">
-          <span class="wcard-icon">🥂</span>
-          <div class="wcard-body">
-            <span class="wcard-name">SEX ON THE MORENA</span>
-            <span class="wcard-hp">−25 HP</span>
-          </div>
-        </div>
-        <div class="wcard wcard-lime">
-          <span class="wcard-icon">🍾</span>
-          <div class="wcard-body">
-            <span class="wcard-name">JANKOWO LIBRE</span>
-            <span class="wcard-hp">−35 HP</span>
+
+        <div class="ctrl-grid">
+          <div class="ctrl-box ctrl-p1">
+            <div class="ctrl-player-label">🎮 Gracz 1 &amp; 2</div>
+            <div class="ctrl-row"><kbd>A</kbd><kbd>D</kbd><span>lub</span><kbd>←</kbd><kbd>→</kbd><span>Ruch</span></div>
+            <div class="ctrl-row"><kbd>W</kbd><span>lub</span><kbd>↑</kbd><span>Skok</span></div>
+            <div class="ctrl-row"><kbd>F</kbd><span>Rzut</span></div>
+            <div class="ctrl-row"><kbd>Q</kbd><kbd>E</kbd><span>Broń</span></div>
           </div>
         </div>
       </div>
 
-      <!-- Controls -->
-      <div class="ctrl-grid">
-        <div class="ctrl-box ctrl-p1">
-          <div class="ctrl-player-label">🎮 Gracz 1</div>
-          <div class="ctrl-row"><kbd>A</kbd><kbd>D</kbd><span>lub</span><kbd>←</kbd><kbd>→</kbd><span>Ruch</span></div>
-          <div class="ctrl-row"><kbd>W</kbd><span>lub</span><kbd>↑</kbd><span>Skok</span></div>
-          <div class="ctrl-row"><kbd>F</kbd><span>Rzut</span></div>
-          <div class="ctrl-row"><kbd>Q</kbd><kbd>E</kbd><span>Broń</span></div>
+      <div class="lobby-panel">
+        <div class="panel-glow"></div>
+
+        <div class="field-group">
+          <label class="field-label" for="player-name">Twój pseudonim</label>
+          <input
+            type="text"
+            id="player-name"
+            class="field-input"
+            placeholder="np. KrólewskiPijak"
+            maxlength="16"
+            autocomplete="off"
+          />
         </div>
-        <div class="ctrl-box ctrl-p2">
-          <div class="ctrl-player-label">🕹️ Gracz 2</div>
-          <div class="ctrl-row"><kbd>←</kbd><kbd>→</kbd><span>lub</span><kbd>A</kbd><kbd>D</kbd><span>Ruch</span></div>
-          <div class="ctrl-row"><kbd>↑</kbd><span>lub</span><kbd>W</kbd><span>Skok</span></div>
-          <div class="ctrl-row"><kbd>L</kbd><span>Rzut</span></div>
-          <div class="ctrl-row"><kbd>[</kbd><kbd>]</kbd><span>Broń</span></div>
+
+        <div id="lobby-actions" class="actions-block">
+          <button class="action-btn action-btn-primary" id="btn-create-room">
+            <span class="action-btn-icon">🎮</span>
+            <span>STWÓRZ POKÓJ</span>
+          </button>
+
+          <div class="or-divider"><span>albo dołącz</span></div>
+
+          <div class="join-row">
+            <input
+              type="text"
+              id="room-code-input"
+              class="field-input field-input-code"
+              placeholder="KOD"
+              maxlength="6"
+              autocomplete="off"
+            />
+            <button class="action-btn action-btn-secondary action-btn-join" id="btn-join-room">
+              <span class="action-btn-icon">🚀</span>
+              <span>DOŁĄCZ</span>
+            </button>
+          </div>
         </div>
+
+        <div id="waiting-state" class="waiting-block hidden">
+          <div class="waiting-label">KOD TWOJEGO POKOJU</div>
+          <div id="room-code-display" class="waiting-code">----</div>
+          <button class="copy-btn" id="btn-copy-code">📋 Kopiuj kod</button>
+          <div class="waiting-dots">
+            <span></span><span></span><span></span>
+            <p>Czekam na drugiego gracza...</p>
+          </div>
+        </div>
+
+        <div id="status-message" class="status-msg hidden"></div>
+      </div>
+
+    </div>
+  </div><!-- /#lobby-section -->
+
+  <!-- ══════════════════════════════════════════
+       GAME SECTION (hidden until match starts)
+  ═══════════════════════════════════════════ -->
+  <div id="game-section" style="display:none">
+
+    <div class="hud hud-left" id="hud-p1">
+      <div class="hud-name" id="hud-p1-name">Gracz 1</div>
+      <div class="hp-bar-container hp-magenta">
+        <div class="hp-segments" id="hp-p1-segments"></div>
+        <div class="hp-fill" id="hp-p1-fill"></div>
+      </div>
+      <div class="hp-value" id="hp-p1-value">100</div>
+      <div class="weapon-hud" id="weapon-p1-hud">
+        <span class="weapon-icon-hud" id="weapon-p1-icon">🍶</span>
+        <span class="weapon-name-hud" id="weapon-p1-name">SOPLICA</span>
+        <span class="weapon-dmg-hud" id="weapon-p1-dmg">-15</span>
       </div>
     </div>
 
-    <!-- RIGHT: Lobby panel -->
-    <div class="lobby-panel">
-      <div class="panel-glow"></div>
+    <div class="hud-center" id="hud-center">
+      <div class="vs-text">VS</div>
+      <div class="round-timer" id="round-timer">3:00</div>
+    </div>
 
-      <!-- Name -->
-      <div class="field-group">
-        <label class="field-label" for="player-name">Twój pseudonim</label>
-        <input
-          type="text"
-          id="player-name"
-          class="field-input"
-          placeholder="np. KrólewskiPijak"
-          maxlength="16"
-          autocomplete="off"
-        />
+    <div class="hud hud-right" id="hud-p2">
+      <div class="hud-name" id="hud-p2-name">Gracz 2</div>
+      <div class="hp-bar-container hp-cyan">
+        <div class="hp-segments" id="hp-p2-segments"></div>
+        <div class="hp-fill" id="hp-p2-fill"></div>
       </div>
+      <div class="hp-value" id="hp-p2-value">100</div>
+      <div class="weapon-hud" id="weapon-p2-hud">
+        <span class="weapon-icon-hud" id="weapon-p2-icon">🍶</span>
+        <span class="weapon-name-hud" id="weapon-p2-name">SOPLICA</span>
+        <span class="weapon-dmg-hud" id="weapon-p2-dmg">-15</span>
+      </div>
+    </div>
 
-      <!-- Action buttons -->
-      <div id="lobby-actions" class="actions-block">
-        <button class="action-btn action-btn-primary" id="btn-create-room">
-          <span class="action-btn-icon">🎮</span>
-          <span>STWÓRZ POKÓJ</span>
-        </button>
+    <canvas id="game-canvas"></canvas>
 
-        <div class="or-divider"><span>albo dołącz</span></div>
+    <div class="game-overlay hidden" id="overlay-countdown">
+      <div class="countdown-number" id="countdown-number">3</div>
+    </div>
 
-        <div class="join-row">
-          <input
-            type="text"
-            id="room-code-input"
-            class="field-input field-input-code"
-            placeholder="KOD"
-            maxlength="6"
-            autocomplete="off"
-          />
-          <button class="action-btn action-btn-secondary action-btn-join" id="btn-join-room">
-            <span class="action-btn-icon">🚀</span>
-            <span>DOŁĄCZ</span>
+    <div class="game-overlay hidden" id="overlay-gameover">
+      <div class="gameover-panel">
+        <div class="gameover-title" id="gameover-title">WYGRYWA!</div>
+        <div class="gameover-winner" id="gameover-winner">Gracz 1</div>
+        <div class="gameover-emoji">🎉🍾🎊</div>
+        <div class="gameover-actions">
+          <button class="btn btn-primary btn-large" id="btn-rematch">
+            <span class="btn-icon">🔄</span> REWANŻ
+          </button>
+          <button class="btn btn-ghost btn-large" id="btn-back-lobby">
+            <span class="btn-icon">🏠</span> LOBBY
           </button>
         </div>
       </div>
-
-      <!-- Waiting state -->
-      <div id="waiting-state" class="waiting-block hidden">
-        <div class="waiting-label">KOD TWOJEGO POKOJU</div>
-        <div id="room-code-display" class="waiting-code">----</div>
-        <button class="copy-btn" id="btn-copy-code">📋 Kopiuj kod</button>
-        <div class="waiting-dots">
-          <span></span><span></span><span></span>
-          <p>Czekam na drugiego gracza...</p>
-        </div>
-      </div>
-
-      <!-- Status -->
-      <div id="status-message" class="status-msg hidden"></div>
     </div>
 
-  </div>
+    <div class="damage-flash hidden" id="damage-flash"></div>
+
+  </div><!-- /#game-section -->
 
   <script src="network.js"></script>
   <script src="lobby.js"></script>
+  <script src="game.js"></script>
 </body>
 </html>

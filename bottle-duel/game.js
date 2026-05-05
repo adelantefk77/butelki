@@ -53,34 +53,67 @@ let myPlayerNum = 1; // 1 or 2
 let isHost      = false;
 
 // ─── INIT ─────────────────────────────────────────────────────
-window.addEventListener('load', init);
+let _controlsAttached = false;
 
-function init() {
-  canvas = document.getElementById('game-canvas');
-  ctx    = canvas.getContext('2d');
+// Called by lobby.js after WebSocket room is established (no page navigation)
+window.initGame = function (playerName, playerNum) {
+  myPlayerNum = playerNum;
+  gameRunning = false;
+  gameEnded   = false;
+  frameCount  = 0;
+  bottles.length    = 0;
+  particles.length  = 0;
+  dmgNumbers.length = 0;
+
+  players.forEach((p, i) => {
+    p.hp        = MAX_HP;
+    p.weaponIdx = 0;
+    p.cooldown  = 0;
+    p.throwing  = false;
+    p.ammo      = makeAmmo();
+    p.x = i === 0 ? 160 : CANVAS_W - 200;
+    p.y = GROUND_Y - P_H;
+    p.vx = p.vy = 0;
+    p.isLocal = (i === playerNum - 1);
+  });
+  players[playerNum - 1].name = playerName;
+
+  // One-time DOM/event setup (survives across rematches and back-to-lobby)
+  if (!_controlsAttached) {
+    canvas = document.getElementById('game-canvas');
+    ctx    = canvas.getContext('2d');
+    window.addEventListener('resize', resizeCanvas);
+    setupControls();
+    document.getElementById('btn-rematch').addEventListener('click', restartGame);
+    document.getElementById('btn-back-lobby').addEventListener('click', backToLobby);
+    _controlsAttached = true;
+  }
 
   resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-
-  // Session info
-  myPlayerNum = parseInt(sessionStorage.getItem('playerNum') || '1');
-  isHost      = sessionStorage.getItem('isHost') === 'true';
-  players[0].name = sessionStorage.getItem('playerName') || 'Gracz 1';
-
-  // Assign local control
-  players[myPlayerNum - 1].isLocal = true;
-  players[2 - myPlayerNum].isLocal = false;
-
-  updateHUD();
-  setupControls();
   setupNetwork();
-  drawBackground(); // static background
-
-  // Rematch / lobby buttons
-  document.getElementById('btn-rematch').addEventListener('click', restartGame);
-  document.getElementById('btn-back-lobby').addEventListener('click', () => { Network.destroy(); window.location.href = 'index.html'; });
-
+  updateHUD();
+  drawBackground();
+  document.getElementById('overlay-gameover').classList.add('hidden');
   startCountdown();
+};
+
+function backToLobby() {
+  Network.destroy();
+  gameRunning = false;
+  cancelAnimationFrame(animId);
+  clearInterval(roundInterval);
+  clearInterval(countdownTimer);
+  document.getElementById('overlay-gameover').classList.add('hidden');
+  document.getElementById('overlay-countdown').classList.add('hidden');
+  document.getElementById('game-section').style.display  = 'none';
+  document.getElementById('lobby-section').style.display = 'block';
+  document.body.className = 'lobby-page';
+  // Re-enable lobby UI
+  document.getElementById('lobby-actions').classList.remove('hidden');
+  document.getElementById('waiting-state').classList.add('hidden');
+  document.getElementById('status-message').classList.add('hidden');
+  document.getElementById('btn-create-room').disabled = false;
+  document.getElementById('btn-join-room').disabled   = false;
 }
 
 function resizeCanvas() {
@@ -122,7 +155,7 @@ function tryThrow(player, pIdx) {
   // Sprawdź ammo
   if (player.ammo[player.weaponIdx] <= 0) {
     // Brak amunicji — spróbuj automatycznie zmienić broń
-    const alt = player.ammo.findIndex((a, i) => a > 0);
+    const alt = player.ammo.findIndex((a) => a > 0);
     if (alt === -1) return; // wszystkie puste
     switchWeapon(player, alt - player.weaponIdx);
     return;
@@ -306,11 +339,6 @@ function applyPhysics(p) {
   p.vy += GRAVITY;
   p.x  += p.vx;
   p.y  += p.vy;
-
-  // Ground
-  const scale = canvas.height / CANVAS_H;
-  const gY = GROUND_Y * scale;
-  const scaledGround = gY / scale;
 
   if (p.y + P_H >= GROUND_Y) {
     p.y = GROUND_Y - P_H;

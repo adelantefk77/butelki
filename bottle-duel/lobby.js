@@ -38,7 +38,6 @@
   }
   function hideStatus() { elStatus.classList.add('hidden'); }
 
-  /** Validates nick — highlights field and returns false if empty */
   function validateName() {
     const name = elName.value.trim();
     if (!name) {
@@ -46,10 +45,7 @@
       elName.style.borderColor = '#ff4466';
       elName.style.boxShadow   = '0 0 0 3px #ff446633';
       showStatus('Wpisz swój pseudonim!', 'error');
-      setTimeout(() => {
-        elName.style.borderColor = '';
-        elName.style.boxShadow   = '';
-      }, 2000);
+      setTimeout(() => { elName.style.borderColor = ''; elName.style.boxShadow = ''; }, 2000);
       return null;
     }
     return name;
@@ -60,6 +56,14 @@
     elBtnJoin.disabled   = val;
   }
 
+  // Switch to game view — WebSocket stays alive, no page navigation
+  function switchToGame(playerName, playerNum) {
+    document.getElementById('lobby-section').style.display = 'none';
+    document.getElementById('game-section').style.display  = 'block';
+    document.body.className = 'game-page';
+    window.initGame(playerName, playerNum);
+  }
+
   // ─── STWÓRZ POKÓJ ─────────────────────────────────────────────
   elBtnCreate.addEventListener('click', async () => {
     const name = validateName();
@@ -68,16 +72,10 @@
     showStatus('Tworzę pokój...', 'info');
     setButtonsDisabled(true);
 
-    Network.onConnected(() => {
-      sessionStorage.setItem('playerName', name);
-      sessionStorage.setItem('playerNum',  '1');
-      sessionStorage.setItem('isHost',     'true');
-      window.location.href = 'game.html';
-    });
+    Network.onConnected(() => switchToGame(name, 1));
 
     try {
       const code = await Network.createRoom();
-      sessionStorage.setItem('roomCode', code);
       elCodeDisplay.textContent = code;
       elActions.classList.add('hidden');
       elWaiting.classList.remove('hidden');
@@ -90,8 +88,7 @@
 
   // ─── KOPIUJ KOD ───────────────────────────────────────────────
   elBtnCopy.addEventListener('click', () => {
-    const code = elCodeDisplay.textContent;
-    navigator.clipboard.writeText(code).then(() => {
+    navigator.clipboard.writeText(elCodeDisplay.textContent).then(() => {
       elBtnCopy.textContent = '✅ Skopiowano!';
       setTimeout(() => { elBtnCopy.textContent = '📋 Kopiuj kod'; }, 2000);
     });
@@ -112,38 +109,22 @@
     showStatus('Łączę się z pokojem ' + code + '...', 'info');
     setButtonsDisabled(true);
 
-    // Register BEFORE joinRoom — callback fires inside conn.on('open')
-    Network.onConnected(() => {
-      sessionStorage.setItem('playerName', name);
-      sessionStorage.setItem('playerNum',  '2');
-      sessionStorage.setItem('roomCode',   code);
-      sessionStorage.setItem('isHost',     'false');
-      window.location.href = 'game.html';
-    });
+    Network.onConnected(() => switchToGame(name, 2));
 
     try {
       await Network.joinRoom(code);
-      // If we reach here, conn is open and onConnected already fired → redirected
     } catch (err) {
       showStatus('❌ ' + (err.message || 'Błąd połączenia'), 'error');
       setButtonsDisabled(false);
     }
   });
 
-  // Enter w polu kodu → join
-  elCodeInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') elBtnJoin.click();
-  });
+  elCodeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') elBtnJoin.click(); });
 
-  // Tylko alfanumeryczne, wielkie litery
   elCodeInput.addEventListener('input', (e) => {
     e.target.value = e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
   });
 
-  // Reset nick highlight on input
-  elName.addEventListener('input', () => {
-    elName.style.borderColor = '';
-    elName.style.boxShadow   = '';
-  });
+  elName.addEventListener('input', () => { elName.style.borderColor = ''; elName.style.boxShadow = ''; });
 
 })();
