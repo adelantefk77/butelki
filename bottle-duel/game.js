@@ -170,34 +170,32 @@ function sendState() {
 
 function handleRemoteState(data) {
   if (data.t === 'throw') {
-    // Stwórz butelkę z eventu rzutu
-    const remoteOwner = 2 - myPlayerNum; // indeks przeciwnika (0-based)
+    const remoteOwner = 2 - myPlayerNum;
     spawnBottle(data.bx, data.by, data.vx, data.vy, WEAPONS[data.wId], remoteOwner);
+    return;
+  }
+  // Dedicated HP event — sent immediately on hit for fast sync
+  if (data.t === 'hp') {
+    const remIdx = 2 - myPlayerNum;
+    players[remIdx].hp = data.hp;
+    updateHUD();
+    if (data.hp <= 0) endGame(myPlayerNum - 1); // remote player died
     return;
   }
   if (data.t !== 's') return;
 
-  const remIdx = 2 - myPlayerNum; // 0-based index against
+  const remIdx = 2 - myPlayerNum;
   const them   = players[remIdx];
   them.x = data.x; them.y = data.y;
   them.vx = data.vx; them.vy = data.vy;
-  them.facing = data.facing;
+  them.facing    = data.facing;
   them.weaponIdx = data.weaponIdx;
   them.throwing  = data.throwing;
-  if (data.ammo)  them.ammo = data.ammo;
-  if (data.name)  them.name = data.name;
+  if (data.ammo !== undefined) them.ammo = data.ammo;
+  if (data.hp   !== undefined) them.hp   = data.hp;
+  if (data.name)               them.name = data.name;
 
-  // ── CRITICAL FIX: sync HP from remote so health bar updates ──
-  if (typeof data.hp === 'number' && data.hp !== them.hp) {
-    them.hp = data.hp;
-    updateHUD();
-    if (them.hp <= 0) {
-      endGame(myPlayerNum - 1); // remote player died → local player wins
-    }
-  } else {
-    updateHUD();
-  }
-
+  updateHUD();
   updateWeaponHUD(remIdx);
 }
 
@@ -337,8 +335,10 @@ function applyDamage(player, dmg, color) {
   updateHUD();
   flashDamage(color);
   spawnDmgNumber(player.x + P_W / 2, player.y, dmg, color);
+  // Immediately tell opponent about our new HP (don't wait for next sendState)
+  Network.send({ t: 'hp', hp: player.hp });
   if (player.hp <= 0) {
-    endGame(players.indexOf(player) === 0 ? 1 : 0); // other player wins
+    endGame(players.indexOf(player) === 0 ? 1 : 0);
   }
 }
 
