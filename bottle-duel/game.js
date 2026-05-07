@@ -811,32 +811,6 @@ function drawPlayers() {
     ctx.fillText(WEAPONS[p.weaponIdx].icon, P_W - 4, armY - 1);
     ctx.globalAlpha = 1;
 
-    // Shield
-    if (p.shieldActive && p.shieldHp > 0) {
-      const dur = p.shieldHp / 100;
-      const sx = P_W + 4, sy = P_H * 0.1, sh = P_H * 0.75, sw = 14;
-      // Shield body
-      ctx.shadowColor = '#4488ff'; ctx.shadowBlur = 20 * dur;
-      const sg = ctx.createLinearGradient(sx, sy, sx + sw, sy + sh);
-      sg.addColorStop(0, `rgba(68,136,255,${0.85 * dur})`);
-      sg.addColorStop(1, `rgba(20,60,180,${0.55 * dur})`);
-      ctx.fillStyle = sg;
-      ctx.beginPath(); ctx.roundRect(sx, sy, sw, sh, [3, 6, 8, 3]); ctx.fill();
-      // Durability fill (fades from top as HP drains)
-      ctx.fillStyle = `rgba(180,220,255,${0.25 * dur})`;
-      ctx.beginPath(); ctx.roundRect(sx + 2, sy + 2, sw - 4, (sh - 4) * dur, [2,4,6,2]); ctx.fill();
-      // Border glow
-      ctx.strokeStyle = `rgba(140,200,255,${dur})`;
-      ctx.lineWidth = 1.5; ctx.shadowBlur = 12;
-      ctx.beginPath(); ctx.roundRect(sx, sy, sw, sh, [3, 6, 8, 3]); ctx.stroke();
-      // Cross emblem
-      ctx.globalAlpha = 0.6 * dur;
-      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.shadowBlur = 6;
-      ctx.beginPath(); ctx.moveTo(sx + sw/2, sy + sh*0.3); ctx.lineTo(sx + sw/2, sy + sh*0.7); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(sx + 3, sy + sh*0.5); ctx.lineTo(sx + sw - 3, sy + sh*0.5); ctx.stroke();
-      ctx.globalAlpha = 1; ctx.shadowBlur = 0;
-    }
-
     // Name tag
     ctx.shadowColor = col; ctx.shadowBlur = 10; ctx.fillStyle = col;
     ctx.font = 'bold 10px "Spline Sans", sans-serif'; ctx.textAlign = 'center';
@@ -844,6 +818,51 @@ function drawPlayers() {
     ctx.textAlign = 'left'; ctx.shadowBlur = 0;
 
     ctx.restore();
+
+    // ── SHIELD — drawn in world coordinates (no flip-transform issues) ──
+    if (p.shieldActive && p.shieldHp > 0) {
+      const dur = p.shieldHp / 100;
+      const sw = 20, sh = Math.round(P_H * 0.82);
+      // Position in front of the character based on facing direction
+      const sx = p.facing > 0 ? (x + P_W + 3) : (x - sw - 3);
+      const sy = y + Math.round(P_H * 0.06);
+
+      ctx.save();
+      ctx.shadowColor = '#4499ff';
+      ctx.shadowBlur = 24;
+
+      // Body
+      ctx.globalAlpha = 0.82 * dur;
+      ctx.fillStyle = '#1a55dd';
+      ctx.beginPath(); ctx.roundRect(sx, sy, sw, sh, 5); ctx.fill();
+
+      // Inner highlight strip
+      ctx.globalAlpha = 0.45 * dur;
+      ctx.fillStyle = '#88bbff';
+      ctx.beginPath(); ctx.roundRect(sx + 3, sy + 3, sw - 6, sh * 0.35, 3); ctx.fill();
+
+      // Durability indicator (shrinks downward as HP drains)
+      ctx.globalAlpha = 0.3 * dur;
+      ctx.fillStyle = '#aaddff';
+      ctx.beginPath(); ctx.roundRect(sx + 2, sy + 2, sw - 4, (sh - 4) * dur, 3); ctx.fill();
+
+      // Border
+      ctx.globalAlpha = dur;
+      ctx.strokeStyle = '#88ccff';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(sx, sy, sw, sh, 5); ctx.stroke();
+
+      // Cross emblem
+      ctx.globalAlpha = 0.65 * dur;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.shadowBlur = 8;
+      const mx = sx + sw / 2, my = sy + sh / 2;
+      ctx.beginPath(); ctx.moveTo(mx, my - sh * 0.22); ctx.lineTo(mx, my + sh * 0.22); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mx - sw * 0.28, my); ctx.lineTo(mx + sw * 0.28, my); ctx.stroke();
+
+      ctx.restore();
+    }
 
     // Hit ring — world space, after restore
     if (p.hitTimer > 0) {
