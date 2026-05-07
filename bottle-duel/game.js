@@ -23,6 +23,8 @@ const MAX_HP = 100;
 // ─── STATE ────────────────────────────────────────────────────
 let canvas, ctx;
 let animId;
+let lastFrameTime = 0;
+const FRAME_MS = 1000 / 60; // lock physics to 60 fps
 let gameRunning = false;
 let gameEnded   = false; // guard against double-endGame
 let frameCount  = 0;   // proper frame counter for sendState throttle
@@ -268,10 +270,11 @@ function startCountdown() {
 }
 
 function startGame() {
-  gameRunning = true;
-  roundTime   = 180;
-  roundInterval = setInterval(tickTimer, 1000);
-  loop();
+  gameRunning    = true;
+  roundTime      = 180;
+  lastFrameTime  = 0;
+  roundInterval  = setInterval(tickTimer, 1000);
+  loop(0);
 }
 
 function tickTimer() {
@@ -282,9 +285,11 @@ function tickTimer() {
   if (roundTime <= 0) endGame(-1); // draw
 }
 
-function loop() {
+function loop(timestamp) {
   if (!gameRunning) return;
   animId = requestAnimationFrame(loop);
+  if (timestamp - lastFrameTime < FRAME_MS) return; // skip if < 16.67ms elapsed
+  lastFrameTime = timestamp;
   update();
   render();
 }
