@@ -324,8 +324,8 @@ function update() {
   // Cooldown
   if (me.cooldown > 0) me.cooldown--;
 
-  // Shield: active while R held, not broken, has HP
-  me.shieldActive = !botMode && !!keys['KeyR'] && !me.shieldBroken && me.shieldHp > 0;
+  // Shield: active while R held and not broken (works in both online and bot mode)
+  me.shieldActive = !!keys['KeyR'] && !me.shieldBroken && me.shieldHp > 0;
 
   // Bottles
   for (let i = bottles.length - 1; i >= 0; i--) {
