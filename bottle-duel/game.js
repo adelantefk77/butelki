@@ -6,9 +6,9 @@
 // ─── CONSTANTS ────────────────────────────────────────────────
 const CANVAS_W = 1280, CANVAS_H = 720;
 const GROUND_Y = CANVAS_H - 80;
-const GRAVITY  = 0.45;
-const JUMP_F   = -11;
-const SPEED    = 3.2;
+const GRAVITY  = 0.5;
+const JUMP_F   = -12;
+const SPEED    = 3.6;
 
 const WEAPONS = [
   { id: 0, name: 'SOPLICA',           icon: '🍶', dmg:  5, color: '#00eefc', speed: 6.5, size: 14, ammo: Infinity, maxAge: 200 },
