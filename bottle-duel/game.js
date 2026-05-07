@@ -39,9 +39,11 @@ function makeAmmo() { return WEAPONS.map(w => w.ammo); }
 const players = [
   { x: 160, y: GROUND_Y - P_H, vx: 0, vy: 0, hp: MAX_HP, onGround: false,
     facing: 1, weaponIdx: 0, cooldown: 0, throwing: false, ammo: null, hitTimer: 0,
+    shieldHp: 100, shieldActive: false, shieldBroken: false,
     name: 'Gracz 1', color: '#ffabf3', darkColor: '#c067a0', isLocal: true },
   { x: CANVAS_W - 200, y: GROUND_Y - P_H, vx: 0, vy: 0, hp: MAX_HP, onGround: false,
     facing: -1, weaponIdx: 0, cooldown: 0, throwing: false, ammo: null, hitTimer: 0,
+    shieldHp: 100, shieldActive: false, shieldBroken: false,
     name: 'Gracz 2', color: '#00eefc', darkColor: '#007a8a', isLocal: false },
 ];
 players.forEach(p => { p.ammo = makeAmmo(); });
@@ -71,12 +73,15 @@ window.initGame = function (playerName, playerNum, isBotMode = false) {
   dmgNumbers.length = 0;
 
   players.forEach((p, i) => {
-    p.hp        = MAX_HP;
-    p.weaponIdx = 0;
-    p.cooldown  = 0;
-    p.throwing  = false;
-    p.hitTimer  = 0;
-    p.ammo      = makeAmmo();
+    p.hp          = MAX_HP;
+    p.weaponIdx   = 0;
+    p.cooldown    = 0;
+    p.throwing    = false;
+    p.hitTimer    = 0;
+    p.shieldHp     = 100;
+    p.shieldActive = false;
+    p.shieldBroken = false;
+    p.ammo        = makeAmmo();
     p.x = i === 0 ? 160 : CANVAS_W - 200;
     p.y = GROUND_Y - P_H;
     p.vx = p.vy = 0;
@@ -206,6 +211,9 @@ function sendState() {
     throwing: me.throwing,
     ammo: me.ammo,
     name: me.name,
+    shieldActive: me.shieldActive,
+    shieldHp: me.shieldHp,
+    shieldBroken: me.shieldBroken,
   });
 }
 
@@ -225,10 +233,14 @@ function handleRemoteState(data) {
   if (data.t === 'hp') {
     const remIdx = 2 - myPlayerNum;
     players[remIdx].hp = data.hp;
+    if (data.shieldHp !== undefined) {
+      players[remIdx].shieldHp = data.shieldHp;
+      if (data.shieldHp <= 0) players[remIdx].shieldBroken = true;
+    }
     updateHUD();
-    // Show hit effects on observer's screen too
-    spawnHitExplosion(players[remIdx]);
-    if (data.hp <= 0) endGame(myPlayerNum - 1); // remote player died
+    if (data.shielded) spawnShieldBreak(players[remIdx]);
+    else spawnHitExplosion(players[remIdx]);
+    if (data.hp <= 0) endGame(myPlayerNum - 1);
     return;
   }
   if (data.t !== 's') return;
@@ -240,9 +252,12 @@ function handleRemoteState(data) {
   them.facing    = data.facing;
   them.weaponIdx = data.weaponIdx;
   them.throwing  = data.throwing;
-  if (data.ammo !== undefined) them.ammo = data.ammo;
-  if (data.hp   !== undefined) them.hp   = data.hp;
-  if (data.name)               them.name = data.name;
+  if (data.ammo        !== undefined) them.ammo        = data.ammo;
+  if (data.hp          !== undefined) them.hp          = data.hp;
+  if (data.name)                      them.name        = data.name;
+  if (data.shieldActive !== undefined) them.shieldActive = data.shieldActive;
+  if (data.shieldHp    !== undefined) them.shieldHp    = data.shieldHp;
+  if (data.shieldBroken !== undefined) them.shieldBroken = data.shieldBroken;
 
   updateHUD();
   updateWeaponHUD(remIdx);
@@ -308,6 +323,9 @@ function update() {
 
   // Cooldown
   if (me.cooldown > 0) me.cooldown--;
+
+  // Shield: active while R held, not broken, has HP
+  me.shieldActive = !botMode && !!keys['KeyR'] && !me.shieldBroken && me.shieldHp > 0;
 
   // Bottles
   for (let i = bottles.length - 1; i >= 0; i--) {
@@ -454,12 +472,24 @@ function hitTest(b, target) {
 }
 
 function applyDamage(player, dmg, color) {
+  if (player.shieldActive && player.shieldHp > 0) {
+    player.shieldHp = Math.max(0, player.shieldHp - dmg);
+    if (player.shieldHp <= 0) {
+      player.shieldBroken = true;
+      player.shieldActive = false;
+      spawnShieldBreak(player);
+    }
+    updateHUD();
+    spawnDmgNumber(player.x + P_W / 2, player.y, dmg, '#4488ff');
+    Network.send({ t: 'hp', hp: player.hp, shieldHp: player.shieldHp, shielded: true });
+    return;
+  }
   player.hp = Math.max(0, player.hp - dmg);
   updateHUD();
   flashDamage(color);
   spawnDmgNumber(player.x + P_W / 2, player.y, dmg, color);
   spawnHitExplosion(player);
-  Network.send({ t: 'hp', hp: player.hp });
+  Network.send({ t: 'hp', hp: player.hp, shieldHp: player.shieldHp });
   if (player.hp <= 0) {
     endGame(players.indexOf(player) === 0 ? 1 : 0);
   }
@@ -492,6 +522,7 @@ function restartGame() {
   document.getElementById('overlay-gameover').classList.add('hidden');
   players.forEach((p, i) => {
     p.hp = MAX_HP; p.weaponIdx = 0; p.cooldown = 0; p.throwing = false; p.hitTimer = 0;
+    p.shieldHp = 100; p.shieldActive = false; p.shieldBroken = false;
     p.ammo = makeAmmo();
     p.x = i === 0 ? 160 : CANVAS_W - 200;
     p.y = GROUND_Y - P_H;
@@ -780,6 +811,32 @@ function drawPlayers() {
     ctx.fillText(WEAPONS[p.weaponIdx].icon, P_W - 4, armY - 1);
     ctx.globalAlpha = 1;
 
+    // Shield
+    if (p.shieldActive && p.shieldHp > 0) {
+      const dur = p.shieldHp / 100;
+      const sx = P_W + 4, sy = P_H * 0.1, sh = P_H * 0.75, sw = 14;
+      // Shield body
+      ctx.shadowColor = '#4488ff'; ctx.shadowBlur = 20 * dur;
+      const sg = ctx.createLinearGradient(sx, sy, sx + sw, sy + sh);
+      sg.addColorStop(0, `rgba(68,136,255,${0.85 * dur})`);
+      sg.addColorStop(1, `rgba(20,60,180,${0.55 * dur})`);
+      ctx.fillStyle = sg;
+      ctx.beginPath(); ctx.roundRect(sx, sy, sw, sh, [3, 6, 8, 3]); ctx.fill();
+      // Durability fill (fades from top as HP drains)
+      ctx.fillStyle = `rgba(180,220,255,${0.25 * dur})`;
+      ctx.beginPath(); ctx.roundRect(sx + 2, sy + 2, sw - 4, (sh - 4) * dur, [2,4,6,2]); ctx.fill();
+      // Border glow
+      ctx.strokeStyle = `rgba(140,200,255,${dur})`;
+      ctx.lineWidth = 1.5; ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.roundRect(sx, sy, sw, sh, [3, 6, 8, 3]); ctx.stroke();
+      // Cross emblem
+      ctx.globalAlpha = 0.6 * dur;
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.shadowBlur = 6;
+      ctx.beginPath(); ctx.moveTo(sx + sw/2, sy + sh*0.3); ctx.lineTo(sx + sw/2, sy + sh*0.7); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(sx + 3, sy + sh*0.5); ctx.lineTo(sx + sw - 3, sy + sh*0.5); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    }
+
     // Name tag
     ctx.shadowColor = col; ctx.shadowBlur = 10; ctx.fillStyle = col;
     ctx.font = 'bold 10px "Spline Sans", sans-serif'; ctx.textAlign = 'center';
@@ -842,6 +899,21 @@ function drawBottles() {
 }
 
 // ─── PARTICLES ────────────────────────────────────────────────
+function spawnShieldBreak(player) {
+  const cx = player.x + P_W / 2 + (player.facing > 0 ? P_W * 0.9 : -P_W * 0.9);
+  const cy = player.y + P_H * 0.45;
+  for (let i = 0; i < 22; i++) {
+    const angle = (i / 22) * Math.PI * 2 + Math.random() * 0.3;
+    const spd = 2 + Math.random() * 6;
+    particles.push({
+      x: cx, y: cy,
+      vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd - 2,
+      color: i % 2 === 0 ? '#4488ff' : '#aaccff',
+      life: 25 + Math.random() * 25, maxLife: 50, r: 2 + Math.random() * 4,
+    });
+  }
+}
+
 function spawnHitExplosion(player) {
   const cx    = player.x + P_W / 2;
   const cy    = player.y + P_H / 2;
@@ -943,11 +1015,19 @@ function updateHUD() {
   document.getElementById('hud-p1-name').textContent = players[0].name;
   document.getElementById('hud-p2-name').textContent = players[1].name;
 
-  // HP
+  // HP + Shield
   [0, 1].forEach(i => {
-    const pct = Math.max(0, players[i].hp / MAX_HP * 100);
-    document.getElementById(`hp-p${i+1}-fill`).style.width = pct + '%';
-    document.getElementById(`hp-p${i+1}-value`).textContent = players[i].hp;
+    const p = players[i];
+    document.getElementById(`hp-p${i+1}-fill`).style.width = Math.max(0, p.hp / MAX_HP * 100) + '%';
+    document.getElementById(`hp-p${i+1}-value`).textContent = p.hp;
+    const sf = document.getElementById(`shield-p${i+1}-fill`);
+    const sv = document.getElementById(`shield-p${i+1}-value`);
+    const sh = document.getElementById(`shield-p${i+1}-hud`);
+    if (sf && sv && sh) {
+      sf.style.width = Math.max(0, p.shieldHp) + '%';
+      sv.textContent = Math.max(0, Math.round(p.shieldHp));
+      sh.style.opacity = p.shieldBroken ? '0.35' : '1';
+    }
   });
 
   [0, 1].forEach(i => updateWeaponHUD(i));
