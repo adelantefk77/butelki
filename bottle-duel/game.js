@@ -6,15 +6,14 @@
 // ─── CONSTANTS ────────────────────────────────────────────────
 const CANVAS_W = 1280, CANVAS_H = 720;
 const GROUND_Y = CANVAS_H - 80;
-const GRAVITY  = 0.6;
-const JUMP_F   = -14;
-const SPEED    = 4.5;
+const GRAVITY  = 0.45;
+const JUMP_F   = -11;
+const SPEED    = 3.2;
 
 const WEAPONS = [
-  // ammo: ile rzutów w rundzie; maxAge: jak daleko doleci (w klatkach)
-  { id: 0, name: 'SOPLICA',           icon: '🍶', dmg:  5, color: '#00eefc', speed: 9,   size: 14, ammo: Infinity, maxAge: 200 },
-  { id: 1, name: 'SEX ON THE MORENA', icon: '🥂', dmg: 25, color: '#ffabf3', speed: 7,   size: 18, ammo:  5, maxAge: 130 },
-  { id: 2, name: 'JANKOWO LIBRE',     icon: '🍾', dmg: 35, color: '#abd600', speed: 5.5, size: 22, ammo:  2, maxAge:  80 },
+  { id: 0, name: 'SOPLICA',           icon: '🍶', dmg:  5, color: '#00eefc', speed: 6.5, size: 14, ammo: Infinity, maxAge: 200 },
+  { id: 1, name: 'SEX ON THE MORENA', icon: '🥂', dmg: 25, color: '#ffabf3', speed: 5,   size: 18, ammo:  5, maxAge: 130 },
+  { id: 2, name: 'JANKOWO LIBRE',     icon: '🍾', dmg: 35, color: '#abd600', speed: 4,   size: 22, ammo:  2, maxAge:  80 },
 ];
 
 const P_W = 40, P_H = 64;
