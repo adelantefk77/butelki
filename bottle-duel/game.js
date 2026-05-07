@@ -179,7 +179,7 @@ function tryThrow(player, pIdx) {
   player.throwing = true;
   setTimeout(() => { player.throwing = false; }, 300);
 
-  Network.send({ t: 'throw', bx, by, vx: dir * w.speed, vy: -5, wId: w.id, owner: pIdx, ts: Date.now() });
+  Network.send({ t: 'throw', bx, by, vx: dir * w.speed, vy: -5, wId: w.id, owner: pIdx });
   sendState();
 }
 
@@ -212,13 +212,10 @@ function handleRemoteState(data) {
   if (data.t === 'throw') {
     const remoteOwner = 2 - myPlayerNum;
     const b = { x: data.bx, y: data.by, vx: data.vx, vy: data.vy, weapon: WEAPONS[data.wId], owner: remoteOwner, age: 0 };
-    // Lag compensation: fast-forward bottle physics by estimated network delay
-    if (data.ts) {
-      const lagFrames = Math.min(Math.round((Date.now() - data.ts) / (1000 / 60)), 45);
-      for (let f = 0; f < lagFrames; f++) {
-        b.x += b.vx; b.y += b.vy; b.vy += GRAVITY * 0.5; b.age++;
-        if (b.y > GROUND_Y - 10 || b.x < -50 || b.x > CANVAS_W + 50) break;
-      }
+    // Fixed 3-frame advance (~50ms typical latency) — clock-based offsets caused
+    // bottles to teleport past players when client clocks drifted, killing hit detection
+    for (let f = 0; f < 3; f++) {
+      b.x += b.vx; b.y += b.vy; b.vy += GRAVITY * 0.5; b.age++;
     }
     bottles.push(b);
     return;
@@ -448,8 +445,8 @@ function applyPhysics(p) {
 }
 
 function hitTest(b, target) {
-  return b.x > target.x - 10 && b.x < target.x + P_W + 10 &&
-         b.y > target.y - 10 && b.y < target.y + P_H + 10;
+  return b.x > target.x - 20 && b.x < target.x + P_W + 20 &&
+         b.y > target.y - 12 && b.y < target.y + P_H + 12;
 }
 
 function applyDamage(player, dmg, color) {
@@ -678,31 +675,32 @@ function drawPlayers() {
     ctx.fillText(`P${idx + 1}`, P_W / 2, -8);
     ctx.textAlign = 'left';
 
-    // Hit explosion ring
-    if (p.hitTimer > 0) {
-      const progress = 1 - p.hitTimer / 14; // 0→1 as ring expands
-      const radius   = (P_W * 0.8) + progress * P_H * 1.4;
-      const alpha    = p.hitTimer / 14;
-      ctx.globalAlpha = alpha * 0.85;
-      ctx.strokeStyle = '#ffffff';
-      ctx.shadowColor = col;
-      ctx.shadowBlur  = 18;
-      ctx.lineWidth   = 3 * alpha;
-      ctx.beginPath();
-      ctx.arc(P_W / 2, P_H / 2, radius, 0, Math.PI * 2);
-      ctx.stroke();
-      // Inner tinted ring
-      ctx.globalAlpha = alpha * 0.4;
-      ctx.strokeStyle = col;
-      ctx.lineWidth = 6 * alpha;
-      ctx.beginPath();
-      ctx.arc(P_W / 2, P_H / 2, radius * 0.6, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-      ctx.shadowBlur  = 0;
-    }
-
     ctx.restore();
+
+    // Hit ring drawn in world-space AFTER restore (not affected by per-player flip/scale)
+    if (p.hitTimer > 0) {
+      const cx       = x + P_W / 2;
+      const cy       = y + P_H / 2;
+      const progress = 1 - p.hitTimer / 22;
+      const radius   = P_W * 0.5 + progress * P_H * 2.2;
+      const alpha    = p.hitTimer / 22;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.shadowColor = col;
+      ctx.shadowBlur  = 28;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth   = 4;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = alpha * 0.5;
+      ctx.strokeStyle = col;
+      ctx.lineWidth   = 8;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * 0.6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
   });
 }
 
@@ -744,38 +742,39 @@ function drawBottles() {
 
 // ─── PARTICLES ────────────────────────────────────────────────
 function spawnHitExplosion(player) {
-  const cx = player.x + P_W / 2;
-  const cy = player.y + P_H / 2;
-  const col = player.color;
+  const cx    = player.x + P_W / 2;
+  const cy    = player.y + P_H / 2;
+  const col   = player.color;
   const WHITE = '#ffffff';
 
-  for (let i = 0; i < 28; i++) {
-    const angle = (i / 28) * Math.PI * 2 + Math.random() * 0.3;
-    const spd   = 3 + Math.random() * 7;
+  // Main burst ring
+  for (let i = 0; i < 36; i++) {
+    const angle = (i / 36) * Math.PI * 2 + Math.random() * 0.25;
+    const spd   = 4 + Math.random() * 10;
     particles.push({
       x: cx, y: cy,
       vx: Math.cos(angle) * spd,
-      vy: Math.sin(angle) * spd - 3,
-      color: i % 4 === 0 ? WHITE : col,
-      life: 30 + Math.random() * 25,
-      maxLife: 55,
-      r: 2 + Math.random() * 5,
+      vy: Math.sin(angle) * spd - 4,
+      color: i % 3 === 0 ? WHITE : col,
+      life: 40 + Math.random() * 30,
+      maxLife: 70,
+      r: 3 + Math.random() * 6,
     });
   }
-  // Extra upward sparks
-  for (let i = 0; i < 8; i++) {
+  // Upward sparks
+  for (let i = 0; i < 12; i++) {
     particles.push({
-      x: cx + (Math.random() - 0.5) * P_W,
+      x: cx + (Math.random() - 0.5) * P_W * 1.2,
       y: cy,
-      vx: (Math.random() - 0.5) * 4,
-      vy: -(5 + Math.random() * 8),
+      vx: (Math.random() - 0.5) * 6,
+      vy: -(6 + Math.random() * 10),
       color: i % 2 === 0 ? col : WHITE,
-      life: 25 + Math.random() * 20,
-      maxLife: 45,
-      r: 1.5 + Math.random() * 3,
+      life: 35 + Math.random() * 25,
+      maxLife: 60,
+      r: 2 + Math.random() * 4,
     });
   }
-  player.hitTimer = 14;
+  player.hitTimer = 22;
 }
 
 function spawnBottleParticles(b) {
