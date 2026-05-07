@@ -6,14 +6,14 @@
 // ─── CONSTANTS ────────────────────────────────────────────────
 const CANVAS_W = 1280, CANVAS_H = 720;
 const GROUND_Y = CANVAS_H - 80;
-const GRAVITY  = 0.51;
-const JUMP_F   = -12.3;
-const SPEED    = 3.7;
+const GRAVITY  = 0.56;
+const JUMP_F   = -13.5;
+const SPEED    = 4.07;
 
 const WEAPONS = [
-  { id: 0, name: 'SOPLICA',           icon: '🍶', dmg:  5, color: '#00eefc', speed: 6.7, size: 14, ammo: Infinity, maxAge: 200 },
-  { id: 1, name: 'SEX ON THE MORENA', icon: '🥂', dmg: 25, color: '#ffabf3', speed: 5.1, size: 18, ammo:  5, maxAge: 130 },
-  { id: 2, name: 'JANKOWO LIBRE',     icon: '🍾', dmg: 35, color: '#abd600', speed: 4.1, size: 22, ammo:  2, maxAge:  80 },
+  { id: 0, name: 'SOPLICA',           icon: '🍶', dmg:  5, color: '#00eefc', speed: 7.4, size: 14, ammo: Infinity, maxAge: 200 },
+  { id: 1, name: 'SEX ON THE MORENA', icon: '🥂', dmg: 25, color: '#ffabf3', speed: 5.6, size: 18, ammo:  5, maxAge: 130 },
+  { id: 2, name: 'JANKOWO LIBRE',     icon: '🍾', dmg: 35, color: '#abd600', speed: 4.5, size: 22, ammo:  2, maxAge:  80 },
 ];
 
 const P_W = 40, P_H = 64;
